@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "../include/Block.h"
+#include "Block.h"
 
 unsigned long difficulty = 1;
 
