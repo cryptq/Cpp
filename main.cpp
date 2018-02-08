@@ -1,61 +1,42 @@
+#include <utility>
 #include <iostream>
-#include <vector>
+
 #include "Block.h"
+#include "sha256.h"
 
-unsigned long difficulty = 1;
-
-bool isChainValid(std::vector<Block> &block_chain)
+Block::Block(std::string data, std::string previous_hash)
 {
-    std::string hash_target(new char[difficulty]);
-    hash_target.replace(hash_target.begin(), hash_target.end(), '\0', '0');
-
-    for (int i = 1; i < block_chain.size(); i++)
-    {
-        Block current_block = block_chain[i];
-        Block previous_block = block_chain[i - 1];
-
-        if (current_block.get_hash() != current_block.calculate_hash())
-        {
-            std::cout << "Current Hashes not equal" << std::endl;
-            return false;
-        }
-
-        if (previous_block.get_hash() != current_block.get_previous_hash())
-        {
-            std::cout << "Previous Hashes not equal" << std::endl;
-            return false;
-        }
-
-        if (current_block.get_hash().substr(0, difficulty) != hash_target)
-        {
-            std::cout << "This block hasn't been mined" << std::endl;
-            return false;
-        }
-    }
-
-    return true;
+    this->data = std::move(data);
+    this->previous_hash = std::move(previous_hash);
+    this->timestamp = time(0);
+    this->hash = calculate_hash();
 }
 
-int main()
+std::string Block::calculate_hash()
 {
-    Block first_block("This is the first block", "0");
-    std::cout << "Trying to Mine block 1..." << std::endl;
-    first_block.mine_block(difficulty);
+    return sha256(previous_hash + ctime(&timestamp) + std::to_string(nonce) + data);
+}
 
-    Block second_block("This is the first block", first_block.get_hash());
-    std::cout << "Trying to Mine block 2..." << std::endl;
-    second_block.mine_block(difficulty);
+void Block::mine_block(unsigned long difficulty)
+{
+    std::string target(new char[difficulty]);
+    target.replace(target.begin(), target.end(), '\0', '0');
 
-    Block third_block("This is the first block", second_block.get_hash());
-    std::cout << "Trying to Mine block 3..." << std::endl;
-    third_block.mine_block(difficulty);
+    while (hash.substr(0, difficulty) != target)
+    {
+        nonce++;
+        hash = calculate_hash();
+    }
 
-    std::vector<Block> block_chain;
-    block_chain.push_back(first_block);
-    block_chain.push_back(second_block);
-    block_chain.push_back(third_block);
+    std::cout << " + БЛОК : " << hash << std::endl;
+}
 
-    std::cout << std::endl;
-    std::cout << "Chain is valid? " << isChainValid(block_chain) << std::endl;
-    return 0;
+std::string Block::get_hash()
+{
+    return hash;
+}
+
+std::string Block::get_previous_hash()
+{
+    return previous_hash;
 }
